@@ -1,6 +1,6 @@
 package com.rafambn.frameprogressbar.enums
 
-enum class Movment {
+enum class Movement {
     DISCRETE,
     CONTINUOUS
 }

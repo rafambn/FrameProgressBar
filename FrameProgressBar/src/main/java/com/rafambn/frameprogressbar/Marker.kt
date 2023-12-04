@@ -13,5 +13,5 @@ data class Marker(
     @Dimension(unit = DP)
     var topOffset: Int = 0,
     var color: Int = Color.GRAY,
-    var bitmap: Bitmap?
-    )
+    var bitmap: Bitmap? = null
+)
