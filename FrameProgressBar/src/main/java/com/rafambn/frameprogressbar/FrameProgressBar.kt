@@ -15,11 +15,11 @@ import com.rafambn.frameprogressbar.enums.PointerSelection
 import com.rafambn.frameprogressbar.managers.MarkerManager
 import com.rafambn.frameprogressbar.managers.PointerManager
 
-class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, attrs), FrameProgressBarApi {
+class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, attrs) {
     private val mScreenScale = context.resources.displayMetrics.density
     private val mMarkerManager = MarkerManager(mScreenScale)
     private val mPointerManager = PointerManager(mScreenScale)
-    private val paint = Paint()
+    private val mPaint = Paint()
 
     @Dimension(unit = Dimension.PX)
     private var mCurrentOffset = 0F
@@ -34,13 +34,13 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     private var mViewCenter = 0F
     private var mSelectedIndex = 0
 
-    private var movement: Movement = Movement.CONTINUOUS
-    private var pointerDirection: PointerSelection = PointerSelection.RIGHT
-    private var corcedPointer: CoercePointer = CoercePointer.COERCED
+    private var mMovement: Movement = Movement.CONTINUOUS
+    private var mPointerDirection: PointerSelection = PointerSelection.RIGHT
+    private var mCorcedPointer: CoercePointer = CoercePointer.NOT_COERCED
 
-    private var initialTouchX = 0F
-    private var startTouchOffset = 0F
-    private var movableDistance = 0F
+    private var mInitialTouchX = 0F
+    private var mStartTouchOffset = 0F
+    private var mMovableDistance = 0F
 
     init {
         mMarkerManager.createMarkers(10)
@@ -48,12 +48,12 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        paint.color = Color.BLUE
-        canvas.drawPaint(paint)
-        mMarkerManager.drawMarkers(mCurrentOffset, canvas, paint)
-        mPointerManager.drawPointer(mViewCenter, canvas, paint)
-        paint.color = Color.BLACK
-        canvas.drawRectWithOffset(dpToPixel(1, mScreenScale).toFloat(), dpToPixel(40, mScreenScale).toFloat(), 0F, mViewCenter, paint)
+        mPaint.color = Color.BLUE
+        canvas.drawPaint(mPaint)
+        mMarkerManager.drawMarkers(mCurrentOffset, canvas, mPaint)
+        mPointerManager.drawPointer(mViewCenter, canvas, mPaint)
+        mPaint.color = Color.BLACK
+        canvas.drawRectWithOffset(dpToPixel(1, mScreenScale).toFloat(), dpToPixel(40, mScreenScale).toFloat(), 0F, mViewCenter, mPaint)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -73,23 +73,13 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
 
         mViewCenter = (width / 2).toFloat()
 
-        mStartOffset = when (pointerDirection) {
+        mStartOffset = when (mPointerDirection) {
             PointerSelection.LEFT -> mViewCenter - dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
             PointerSelection.CENTER -> mViewCenter
             PointerSelection.RIGHT -> mViewCenter + dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
         }
 
-        mCurrentOffset = if (movement == Movement.DISCRETE)
-            mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
-        else if (corcedPointer == CoercePointer.COERCED)
-            mStartOffset - when (pointerDirection) {
-                PointerSelection.LEFT -> 0
-                PointerSelection.CENTER -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
-                PointerSelection.RIGHT -> dpToPixel(mPointerManager.pointer.width, mScreenScale)
-            }
-        else
-            mStartOffset
-
+        mCurrentOffset = mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
 
         val height: Int = when (heightMode) {
             MeasureSpec.EXACTLY -> heightSize
@@ -104,17 +94,17 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                initialTouchX = event.x
-                startTouchOffset = mCurrentOffset
-                mCoercedtOffset = if (corcedPointer == CoercePointer.COERCED)
-                    when (pointerDirection) {
+                mInitialTouchX = event.x
+                mStartTouchOffset = mCurrentOffset
+                mCoercedtOffset = if (mCorcedPointer == CoercePointer.COERCED) //TODO melhorar coerce
+                    when (mPointerDirection) {
                         PointerSelection.LEFT -> 0
                         PointerSelection.CENTER -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
                         PointerSelection.RIGHT -> dpToPixel(mPointerManager.pointer.width, mScreenScale)
                     }
                 else
                     0
-                movableDistance = if (corcedPointer == CoercePointer.NOT_COERCED)
+                mMovableDistance = if (mCorcedPointer == CoercePointer.NOT_COERCED)
                     mMarkerManager.markerWidth.toFloat()
                 else
                     mMarkerManager.markerWidth - dpToPixel(mPointerManager.pointer.width, mScreenScale).toFloat()
@@ -122,18 +112,17 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
             }
 
             MotionEvent.ACTION_MOVE -> {
-                var distanceMoved = startTouchOffset + event.x - initialTouchX
-                distanceMoved = distanceMoved.coerceIn(mStartOffset - movableDistance - mCoercedtOffset, mStartOffset - mCoercedtOffset)
+                var distanceMoved = mStartTouchOffset + event.x - mInitialTouchX
+                distanceMoved = distanceMoved.coerceIn(mStartOffset - mMovableDistance - mCoercedtOffset, mStartOffset - mCoercedtOffset)
 
                 mSelectedIndex = mMarkerManager.findIndexTroughOffset(
-                    mViewCenter - distanceMoved - when (pointerDirection) {
+                    mViewCenter - distanceMoved - when (mPointerDirection) {
                         PointerSelection.LEFT -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
                         PointerSelection.CENTER -> 0
                         PointerSelection.RIGHT -> +dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
                     }
                 )
-
-                mCurrentOffset = if (movement == Movement.DISCRETE)
+                mCurrentOffset = if (mMovement == Movement.DISCRETE)
                     mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
                 else
                     distanceMoved
@@ -143,4 +132,39 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
         }
         return super.onTouchEvent(event)
     }
+
+    var index: Int
+        get() = mSelectedIndex
+        set(index) {
+            mSelectedIndex = index
+            mCurrentOffset = mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
+            invalidate()
+        }
+
+    var movement: Movement
+        get() = mMovement
+        set(value) {
+            mMovement = value
+        }
+
+    var pointerDirection: PointerSelection
+        get() = mPointerDirection
+        set(value) {
+            mPointerDirection = value
+        }
+
+    var corcedPointer: CoercePointer
+        get() = mCorcedPointer
+        set(value) {
+            mCorcedPointer = value
+        }
+
+    var offset: Float
+        get() {
+           return -(mCurrentOffset - mStartOffset)
+        }
+        set(value) {
+            mCurrentOffset = -(value - mStartOffset)
+            invalidate()
+        }
 }
