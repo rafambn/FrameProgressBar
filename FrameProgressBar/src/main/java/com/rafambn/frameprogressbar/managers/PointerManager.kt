@@ -8,7 +8,7 @@ import com.rafambn.frameprogressbar.dpToPixel
 import com.rafambn.frameprogressbar.drawRectWithOffset
 
 class PointerManager(private var screenScale: Float) {
-    var pointer = Marker(color = Color.YELLOW, height = 40, topOffset = 10, width = 10)
+    var pointer = Marker(color = Color.YELLOW, height = 40, topOffset = 10, width = 14)
 
     val pointerTotalHeight
         get() = dpToPixel(pointer.height + pointer.topOffset, screenScale)
@@ -18,15 +18,15 @@ class PointerManager(private var screenScale: Float) {
             canvas.drawBitmap(
                 bitmap,
                 mViewCenter - dpToPixel(pointer.width, screenScale) / 2,
-                dpToPixel(pointer.topOffset, screenScale),
+                dpToPixel(pointer.topOffset, screenScale).toFloat(),
                 paint
             )
         } ?: run {
             paint.color = pointer.color
             canvas.drawRectWithOffset(
-                dpToPixel(pointer.width, screenScale),
-                dpToPixel(pointer.height, screenScale),
-                dpToPixel(pointer.topOffset, screenScale),
+                dpToPixel(pointer.width, screenScale).toFloat(),
+                dpToPixel(pointer.height, screenScale).toFloat(),
+                dpToPixel(pointer.topOffset, screenScale).toFloat(),
                 mViewCenter - dpToPixel(pointer.width, screenScale) / 2,
                 paint
             )

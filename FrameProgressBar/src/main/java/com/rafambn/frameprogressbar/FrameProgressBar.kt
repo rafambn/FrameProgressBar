@@ -1,5 +1,6 @@
 package com.rafambn.frameprogressbar
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -7,6 +8,7 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import androidx.annotation.Dimension
 import com.rafambn.frameprogressbar.enums.CoercePointer
 import com.rafambn.frameprogressbar.enums.Movement
 import com.rafambn.frameprogressbar.enums.PointerSelection
@@ -19,25 +21,29 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     private val mPointerManager = PointerManager(mScreenScale)
     private val paint = Paint()
 
+    @Dimension(unit = Dimension.PX)
     private var mCurrentOffset = 0F
+
+    @Dimension(unit = Dimension.PX)
     private var mStartOffset = 0F
-    private var mSelectedIndex = 0
+
+    @Dimension(unit = Dimension.PX)
+    private var mCoercedtOffset = 0
+
+    @Dimension(unit = Dimension.PX)
     private var mViewCenter = 0F
+    private var mSelectedIndex = 0
 
     private var movement: Movement = Movement.CONTINUOUS
-    private var pointerDirection: PointerSelection = PointerSelection.CENTER
-    private var corcedPointer: CoercePointer = CoercePointer.NOT_COERCED
+    private var pointerDirection: PointerSelection = PointerSelection.RIGHT
+    private var corcedPointer: CoercePointer = CoercePointer.COERCED
 
     private var initialTouchX = 0F
     private var startTouchOffset = 0F
-    private var movableDistance = if (corcedPointer == CoercePointer.NOT_COERCED)
-        mMarkerManager.markerWidth
-    else
-        mMarkerManager.markerWidth - dpToPixel(mPointerManager.pointer.width, mScreenScale)
+    private var movableDistance = 0F
 
     init {
         mMarkerManager.createMarkers(10)
-
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -47,12 +53,12 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
         mMarkerManager.drawMarkers(mCurrentOffset, canvas, paint)
         mPointerManager.drawPointer(mViewCenter, canvas, paint)
         paint.color = Color.BLACK
-        canvas.drawRectWithOffset(dpToPixel(1, mScreenScale), dpToPixel(40, mScreenScale), 0F, mViewCenter - dpToPixel(1, mScreenScale) / 2, paint)
+        canvas.drawRectWithOffset(dpToPixel(1, mScreenScale).toFloat(), dpToPixel(40, mScreenScale).toFloat(), 0F, mViewCenter, paint)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val desiredWidthInPixels = mMarkerManager.markerWidth.toInt()
-        val desiredHeightInPixels = maxOf(mMarkerManager.markerTotalHeight, mPointerManager.pointerTotalHeight).toInt()
+        val desiredWidthInPixels = mMarkerManager.markerWidth.toFloat()
+        val desiredHeightInPixels = maxOf(mMarkerManager.markerTotalHeight.toFloat(), mPointerManager.pointerTotalHeight.toFloat())
 
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
@@ -61,8 +67,8 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
 
         val width: Int = when (widthMode) {
             MeasureSpec.EXACTLY -> widthSize
-            MeasureSpec.AT_MOST -> desiredWidthInPixels.coerceAtMost(widthSize)
-            else -> desiredWidthInPixels
+            MeasureSpec.AT_MOST -> desiredWidthInPixels.coerceAtMost(widthSize.toFloat()).toInt()
+            else -> desiredWidthInPixels.toInt()
         }
 
         mViewCenter = (width / 2).toFloat()
@@ -73,33 +79,64 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
             PointerSelection.RIGHT -> mViewCenter + dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
         }
 
-        mCurrentOffset = mStartOffset
+        mCurrentOffset = if (movement == Movement.DISCRETE)
+            mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
+        else if (corcedPointer == CoercePointer.COERCED)
+            mStartOffset - when (pointerDirection) {
+                PointerSelection.LEFT -> 0
+                PointerSelection.CENTER -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+                PointerSelection.RIGHT -> dpToPixel(mPointerManager.pointer.width, mScreenScale)
+            }
+        else
+            mStartOffset
+
 
         val height: Int = when (heightMode) {
             MeasureSpec.EXACTLY -> heightSize
-            MeasureSpec.AT_MOST -> desiredHeightInPixels.coerceAtMost(heightSize)
-            else -> desiredHeightInPixels
+            MeasureSpec.AT_MOST -> desiredHeightInPixels.coerceAtMost(widthSize.toFloat()).toInt()
+            else -> desiredHeightInPixels.toInt()
         }
 
         setMeasuredDimension(width, height)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 initialTouchX = event.x
                 startTouchOffset = mCurrentOffset
+                mCoercedtOffset = if (corcedPointer == CoercePointer.COERCED)
+                    when (pointerDirection) {
+                        PointerSelection.LEFT -> 0
+                        PointerSelection.CENTER -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+                        PointerSelection.RIGHT -> dpToPixel(mPointerManager.pointer.width, mScreenScale)
+                    }
+                else
+                    0
+                movableDistance = if (corcedPointer == CoercePointer.NOT_COERCED)
+                    mMarkerManager.markerWidth.toFloat()
+                else
+                    mMarkerManager.markerWidth - dpToPixel(mPointerManager.pointer.width, mScreenScale).toFloat()
                 return true
             }
 
             MotionEvent.ACTION_MOVE -> {
-                var newOffset = startTouchOffset + event.x - initialTouchX
-                mCurrentOffset = newOffset.coerceIn(mViewCenter - movableDistance, mViewCenter) //TODO bo aqui
+                var distanceMoved = startTouchOffset + event.x - initialTouchX
+                distanceMoved = distanceMoved.coerceIn(mStartOffset - movableDistance - mCoercedtOffset, mStartOffset - mCoercedtOffset)
 
-//                selectedIndex = findIndexTroughOffset(currentOffset)
+                mSelectedIndex = mMarkerManager.findIndexTroughOffset(
+                    mViewCenter - distanceMoved - when (pointerDirection) {
+                        PointerSelection.LEFT -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+                        PointerSelection.CENTER -> 0
+                        PointerSelection.RIGHT -> +dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+                    }
+                )
 
-//                if (movement == Movement.DISCRETE)
-//                    currentOffset = viewCenter - offsets[selectedIndex]
+                mCurrentOffset = if (movement == Movement.DISCRETE)
+                    mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
+                else
+                    distanceMoved
 
                 invalidate()
             }

@@ -15,22 +15,22 @@ internal class MarkerManager(private var screenScale: Float) {
     val markerTotalHeight
         get() = dpToPixel(mMarkersList.maxOf { it.height + it.topOffset }, screenScale)
 
-    internal fun drawMarkers(currentOffset: Float, canvas: Canvas, paint: Paint){
+    internal fun drawMarkers(currentOffset: Float, canvas: Canvas, paint: Paint) {
         mMarkersList.forEachIndexed { index, marker ->
             marker.bitmap?.let { bitmap ->
                 paint.alpha = 255
                 canvas.drawBitmap(
                     bitmap,
                     currentOffset,
-                    dpToPixel(marker.topOffset, screenScale),
+                    dpToPixel(marker.topOffset, screenScale).toFloat(),
                     paint
                 )
             } ?: run {
                 paint.color = marker.color
                 canvas.drawRectWithOffset(
-                    dpToPixel(marker.width, screenScale),
-                    dpToPixel(marker.height, screenScale),
-                    dpToPixel(marker.topOffset, screenScale),
+                    dpToPixel(marker.width, screenScale).toFloat(),
+                    dpToPixel(marker.height, screenScale).toFloat(),
+                    dpToPixel(marker.topOffset, screenScale).toFloat(),
                     currentOffset + mOffsets[index],
                     paint
                 )
@@ -67,12 +67,19 @@ internal class MarkerManager(private var screenScale: Float) {
         }
     }
 
-//    private fun findIndexTroughOffset(offset: Int): Int {
-//        val amountMoved = viewCenter - offset
-//        offsets.forEachIndexed { index, currentOffset ->
-//            if (amountMoved <= currentOffset)
-//                return index
-//        }
-//        return 0
-//    }
+    fun findIndexTroughOffset(offset: Float): Int {
+        val index = mOffsets.indexOfLast { offset >= it }
+        return if (index != -1) index else 0
+    }
+
+    fun findOffsetTroughIndex(mSelectedIndex: Int): Float {
+        var starOffset = 0F
+        mMarkersList.forEachIndexed { index, marker ->
+            if (mSelectedIndex == index) {
+                starOffset += dpToPixel(marker.width, screenScale) / 2
+                return starOffset
+            } else starOffset += dpToPixel(marker.width, screenScale)
+        }
+        return starOffset
+    }
 }

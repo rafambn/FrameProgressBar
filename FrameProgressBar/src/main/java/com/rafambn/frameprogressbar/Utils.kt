@@ -20,6 +20,6 @@ fun Canvas.drawRectWithOffset(
     this.drawRect(offset, topOffset, offset + width, topOffset + heigth, paint)
 }
 
-fun dpToPixel(dpValue: Int, screenScale: Float): Float {
-    return dpValue * screenScale + 0.5f
+fun dpToPixel(dpValue: Int, screenScale: Float): Int {
+    return (dpValue * screenScale + 0.5f).toInt()
 }
