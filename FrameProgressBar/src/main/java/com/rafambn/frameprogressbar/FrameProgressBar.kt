@@ -2,14 +2,18 @@ package com.rafambn.frameprogressbar
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.Dimension
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.content.ContextCompat
 import com.rafambn.frameprogressbar.api.FrameProgressBarAPI
 import com.rafambn.frameprogressbar.api.MarkersAPI
 import com.rafambn.frameprogressbar.api.PointerAPI
@@ -33,7 +37,7 @@ import com.rafambn.frameprogressbar.managers.PointerManager
  * * Coerce Pointer: This feature determines whether or not the pointer can be dragged beyond the start or end of the progress
  * bar. The two possible values are COERCED and NOT_COERCED.
  */
-class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, attrs),
+class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View(context, attrs),
     FrameProgressBarAPI, MarkersAPI, PointerAPI {
     private val mScreenScale = context.resources.displayMetrics.density
     private val mMarkerManager = MarkerManager(mScreenScale)
@@ -51,18 +55,65 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
 
     @Dimension(unit = Dimension.PX)
     private var mViewCenter = 0F
-    private var mSelectedIndex = 0
+    private var mSelectedIndex: Int
 
-    private var mMovement: Movement = Movement.CONTINUOUS
-    private var mPointerDirection: PointerSelection = PointerSelection.CENTER
-    private var mCoercedPointer: CoercePointer = CoercePointer.NOT_COERCED
+    private var mMovement: Movement
+    private var mPointerSelection: PointerSelection
+    private var mCoercedPointer: CoercePointer
 
     private var mInitialTouchX = 0F
     private var mStartTouchOffset = 0F
     private var mMovableDistance = 0F
 
     init {
-        mMarkerManager.createMarkers(10)
+        val myAttrs = context.obtainStyledAttributes(attrs, R.styleable.FrameProgressBar)
+        mMarkerManager.createMarkers(
+            myAttrs.getInt(R.styleable.FrameProgressBar_size, 10),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersWidth, 5),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersHeight, 20),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersTopOffset, 0),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersColor, Color.GRAY),
+            try {
+                ContextCompat.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1))
+            } catch (ex: Resources.NotFoundException) {
+                null
+            }
+        )
+        mPointerManager.createPointer(
+            myAttrs.getInt(R.styleable.FrameProgressBar_pointerWidth, 5),
+            myAttrs.getInt(R.styleable.FrameProgressBar_pointerHeight, 40),
+            myAttrs.getInt(R.styleable.FrameProgressBar_pointerTopOffset, 0),
+            myAttrs.getInt(R.styleable.FrameProgressBar_pointerColor, Color.YELLOW),
+            try {
+                ContextCompat.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1))
+            } catch (ex: Resources.NotFoundException) {
+                null
+            }
+        )
+        mSelectedIndex = myAttrs.getInt(R.styleable.FrameProgressBar_startIndex, 0)
+        mMovement = when (myAttrs.getInt(R.styleable.FrameProgressBar_movement, 1)) {
+            0 -> Movement.DISCRETE
+            1 -> Movement.CONTINUOUS
+            else -> {
+                Movement.CONTINUOUS
+            }
+        }
+        mPointerSelection = when (myAttrs.getInt(R.styleable.FrameProgressBar_pointerSelection, 1)) {
+            0 -> PointerSelection.LEFT
+            1 -> PointerSelection.CENTER
+            2 -> PointerSelection.RIGHT
+            else -> {
+                PointerSelection.CENTER
+            }
+        }
+        mCoercedPointer = when (myAttrs.getInt(R.styleable.FrameProgressBar_coercePointer, 1)) {
+            0 -> CoercePointer.COERCED
+            1 -> CoercePointer.NOT_COERCED
+            else -> {
+                CoercePointer.NOT_COERCED
+            }
+        }
+        myAttrs.recycle()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -91,7 +142,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
 
         mViewCenter = (width / 2).toFloat()
 
-        mStartOffset = when (mPointerDirection) {
+        mStartOffset = when (mPointerSelection) {
             PointerSelection.LEFT -> mViewCenter - mPointerManager.pointerWidth / 2
             PointerSelection.CENTER -> mViewCenter
             PointerSelection.RIGHT -> mViewCenter + mPointerManager.pointerWidth / 2
@@ -116,7 +167,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
                 mStartTouchOffset = mCurrentOffset
                 mCoercedtOffset =
                     if (mCoercedPointer == CoercePointer.COERCED) //TODO improve coerce
-                        when (mPointerDirection) {
+                        when (mPointerSelection) {
                             PointerSelection.LEFT -> 0
                             PointerSelection.CENTER -> mPointerManager.pointerWidth / 2
                             PointerSelection.RIGHT -> mPointerManager.pointerWidth
@@ -138,7 +189,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
                 )
 
                 mSelectedIndex = mMarkerManager.findIndexTroughOffset(
-                    mViewCenter - distanceMoved - when (mPointerDirection) {
+                    mViewCenter - distanceMoved - when (mPointerSelection) {
                         PointerSelection.LEFT -> mPointerManager.pointerWidth / 2
                         PointerSelection.CENTER -> 0
                         PointerSelection.RIGHT -> -mPointerManager.pointerWidth / 2
@@ -158,12 +209,21 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     /**
      * Sets the number of frames to be displayed.
      *
-     * Warning: This method will reset all current markers.
+     * Warning: This method might reset all current markers.
      *
      * @param numberFrames The number of frames to be displayed.
      */
     override fun setNumberFrames(numberFrames: Int) {
-        mMarkerManager.createMarkers(numberFrames)
+        val myAttrs = context.obtainStyledAttributes(attrs, R.styleable.FrameProgressBar)
+        mMarkerManager.createMarkers(
+            myAttrs.getInt(R.styleable.FrameProgressBar_size, 10),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersWidth, 5),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersHeight, 20),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersTopOffset, 0),
+            myAttrs.getInt(R.styleable.FrameProgressBar_markersColor, Color.GRAY),
+            AppCompatResources.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, 0))
+        )
+        myAttrs.recycle()
         invalidate()
         requestLayout()
     }
@@ -226,7 +286,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
      * @see PointerSelection
      */
     override fun setPointerSelection(pointerSelection: PointerSelection) {
-        mPointerDirection = pointerSelection
+        mPointerSelection = pointerSelection
         invalidate()
         requestLayout()
     }
@@ -238,7 +298,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
      * @return The pointer selection.
      */
     override fun getPointerSelection(): PointerSelection {
-        return mPointerDirection
+        return mPointerSelection
     }
 
     /**

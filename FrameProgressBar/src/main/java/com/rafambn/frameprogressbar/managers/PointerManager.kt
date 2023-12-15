@@ -2,7 +2,6 @@ package com.rafambn.frameprogressbar.managers
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import androidx.core.graphics.drawable.toBitmap
@@ -12,12 +11,22 @@ import com.rafambn.frameprogressbar.dpToPixel
 import com.rafambn.frameprogressbar.drawRectWithOffset
 
 class PointerManager(private var screenScale: Float) : PointerAPI {
-    private var mPointer = Marker(color = Color.YELLOW, height = 40, width = 5)
+    private lateinit var mPointer: Marker
     val pointerWidth
         get() = dpToPixel(mPointer.width, screenScale)
 
     val pointerTotalHeight
         get() = dpToPixel(mPointer.height + mPointer.topOffset, screenScale)
+
+    fun createPointer(width: Int, height: Int, topOffset: Int, color: Int, drawable: Drawable?) {
+        mPointer = Marker(
+            width = width,
+            height = height,
+            topOffset = topOffset,
+            color = color,
+            bitmap = drawable?.toBitmap(dpToPixel(width, screenScale), dpToPixel(height, screenScale), null)
+        )
+    }
 
     fun drawPointer(mViewCenter: Float, canvas: Canvas, paint: Paint) {
         mPointer.bitmap?.let { bitmap ->

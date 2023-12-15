@@ -44,19 +44,27 @@ internal class MarkerManager(private var screenScale: Float) : MarkersAPI {
         }
     }
 
-
-    fun createMarkers(numberOfMarkers: Int) {
+    fun createMarkers(numberOfMarkers: Int, width: Int, height: Int, topOffset: Int, color: Int, drawable: Drawable?) {
         mMarkersList.clear()
         for (i in 0 until numberOfMarkers) {
-            mMarkersList.add(Marker(width = 5, height = 20))
+            mMarkersList.add(
+                Marker(
+                    width = width,
+                    height = height,
+                    topOffset = topOffset,
+                    color = color,
+                    bitmap = drawable?.toBitmap(dpToPixel(width, screenScale), dpToPixel(height, screenScale), null)
+                )
+            )
         }
 
-        mMarkersList.forEachIndexed { index, marker ->
-            if (index % 2 == 0)
-                marker.color = Color.GRAY
-            else
-                marker.color = Color.TRANSPARENT
-        }
+        if (color == Color.GRAY && drawable == null)
+            mMarkersList.forEachIndexed { index, marker ->
+                if (index % 2 == 0)
+                    marker.color = Color.GRAY
+                else
+                    marker.color = Color.TRANSPARENT
+            }
 
         updateMarkers()
     }
