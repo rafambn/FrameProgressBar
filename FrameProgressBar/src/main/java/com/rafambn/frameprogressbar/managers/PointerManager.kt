@@ -1,35 +1,69 @@
 package com.rafambn.frameprogressbar.managers
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.drawable.Drawable
+import androidx.core.graphics.drawable.toBitmap
 import com.rafambn.frameprogressbar.Marker
+import com.rafambn.frameprogressbar.api.PointerAPI
 import com.rafambn.frameprogressbar.dpToPixel
 import com.rafambn.frameprogressbar.drawRectWithOffset
 
-class PointerManager(private var screenScale: Float) {
-    var pointer = Marker(color = Color.YELLOW, height = 40, topOffset = 10, width = 10)
+class PointerManager(private var screenScale: Float) : PointerAPI {
+    private var mPointer = Marker(color = Color.YELLOW, height = 40, width = 5)
+    val pointerWidth
+        get() = dpToPixel(mPointer.width, screenScale)
 
     val pointerTotalHeight
-        get() = dpToPixel(pointer.height + pointer.topOffset, screenScale)
+        get() = dpToPixel(mPointer.height + mPointer.topOffset, screenScale)
+
     fun drawPointer(mViewCenter: Float, canvas: Canvas, paint: Paint) {
-        pointer.bitmap?.let { bitmap ->
+        mPointer.bitmap?.let { bitmap ->
             paint.alpha = 255
             canvas.drawBitmap(
                 bitmap,
-                mViewCenter - dpToPixel(pointer.width, screenScale) / 2,
-                dpToPixel(pointer.topOffset, screenScale).toFloat(),
+                mViewCenter - dpToPixel(mPointer.width, screenScale) / 2,
+                dpToPixel(mPointer.topOffset, screenScale).toFloat(),
                 paint
             )
         } ?: run {
-            paint.color = pointer.color
+            paint.color = mPointer.color
             canvas.drawRectWithOffset(
-                dpToPixel(pointer.width, screenScale).toFloat(),
-                dpToPixel(pointer.height, screenScale).toFloat(),
-                dpToPixel(pointer.topOffset, screenScale).toFloat(),
-                mViewCenter - dpToPixel(pointer.width, screenScale) / 2,
+                dpToPixel(mPointer.width, screenScale).toFloat(),
+                dpToPixel(mPointer.height, screenScale).toFloat(),
+                dpToPixel(mPointer.topOffset, screenScale).toFloat(),
+                mViewCenter - dpToPixel(mPointer.width, screenScale) / 2,
                 paint
             )
         }
+    }
+
+    override fun setPointerWidth(width: Int) {
+        mPointer.width = width
+    }
+
+    override fun setPointerHeight(height: Int) {
+        mPointer.height = height
+    }
+
+    override fun setPointerTopOffset(topOffset: Int) {
+        mPointer.topOffset = topOffset
+    }
+
+    override fun setPointerColor(color: Int) {
+        mPointer.color = color
+    }
+
+    override fun setPointerDrawable(drawable: Drawable?) {
+        if (drawable == null)
+            mPointer.bitmap = drawable
+        else
+            mPointer.bitmap = drawable.toBitmap(dpToPixel(mPointer.width, screenScale), dpToPixel(mPointer.height, screenScale), null)
+    }
+
+    override fun setPointerBitmap(bitmap: Bitmap?) {
+        mPointer.bitmap = bitmap
     }
 }

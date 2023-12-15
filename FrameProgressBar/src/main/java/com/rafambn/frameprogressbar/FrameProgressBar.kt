@@ -2,20 +2,27 @@ package com.rafambn.frameprogressbar
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.Dimension
+import com.rafambn.frameprogressbar.api.FrameProgressBarAPI
+import com.rafambn.frameprogressbar.api.MarkersAPI
+import com.rafambn.frameprogressbar.api.PointerAPI
 import com.rafambn.frameprogressbar.enums.CoercePointer
 import com.rafambn.frameprogressbar.enums.Movement
 import com.rafambn.frameprogressbar.enums.PointerSelection
 import com.rafambn.frameprogressbar.managers.MarkerManager
 import com.rafambn.frameprogressbar.managers.PointerManager
 
-class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, attrs) {
+/**
+ *
+ */
+class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, attrs), FrameProgressBarAPI, MarkersAPI, PointerAPI {
     private val mScreenScale = context.resources.displayMetrics.density
     private val mMarkerManager = MarkerManager(mScreenScale)
     private val mPointerManager = PointerManager(mScreenScale)
@@ -35,7 +42,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     private var mSelectedIndex = 0
 
     private var mMovement: Movement = Movement.CONTINUOUS
-    private var mPointerDirection: PointerSelection = PointerSelection.RIGHT
+    private var mPointerDirection: PointerSelection = PointerSelection.CENTER
     private var mCorcedPointer: CoercePointer = CoercePointer.NOT_COERCED
 
     private var mInitialTouchX = 0F
@@ -48,12 +55,8 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        mPaint.color = Color.BLUE
-        canvas.drawPaint(mPaint)
         mMarkerManager.drawMarkers(mCurrentOffset, canvas, mPaint)
         mPointerManager.drawPointer(mViewCenter, canvas, mPaint)
-        mPaint.color = Color.BLACK
-        canvas.drawRectWithOffset(dpToPixel(1, mScreenScale).toFloat(), dpToPixel(40, mScreenScale).toFloat(), 0F, mViewCenter, mPaint)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -74,9 +77,9 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
         mViewCenter = (width / 2).toFloat()
 
         mStartOffset = when (mPointerDirection) {
-            PointerSelection.LEFT -> mViewCenter - dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+            PointerSelection.LEFT -> mViewCenter - mPointerManager.pointerWidth / 2
             PointerSelection.CENTER -> mViewCenter
-            PointerSelection.RIGHT -> mViewCenter + dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+            PointerSelection.RIGHT -> mViewCenter + mPointerManager.pointerWidth / 2
         }
 
         mCurrentOffset = mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
@@ -96,18 +99,18 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
             MotionEvent.ACTION_DOWN -> {
                 mInitialTouchX = event.x
                 mStartTouchOffset = mCurrentOffset
-                mCoercedtOffset = if (mCorcedPointer == CoercePointer.COERCED) //TODO melhorar coerce
+                mCoercedtOffset = if (mCorcedPointer == CoercePointer.COERCED) //TODO improve coerce
                     when (mPointerDirection) {
                         PointerSelection.LEFT -> 0
-                        PointerSelection.CENTER -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
-                        PointerSelection.RIGHT -> dpToPixel(mPointerManager.pointer.width, mScreenScale)
+                        PointerSelection.CENTER -> mPointerManager.pointerWidth / 2
+                        PointerSelection.RIGHT -> mPointerManager.pointerWidth
                     }
                 else
                     0
                 mMovableDistance = if (mCorcedPointer == CoercePointer.NOT_COERCED)
                     mMarkerManager.markerWidth.toFloat()
                 else
-                    mMarkerManager.markerWidth - dpToPixel(mPointerManager.pointer.width, mScreenScale).toFloat()
+                    mMarkerManager.markerWidth - mPointerManager.pointerWidth.toFloat()
                 return true
             }
 
@@ -117,9 +120,9 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
 
                 mSelectedIndex = mMarkerManager.findIndexTroughOffset(
                     mViewCenter - distanceMoved - when (mPointerDirection) {
-                        PointerSelection.LEFT -> dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+                        PointerSelection.LEFT -> mPointerManager.pointerWidth / 2
                         PointerSelection.CENTER -> 0
-                        PointerSelection.RIGHT -> +dpToPixel(mPointerManager.pointer.width, mScreenScale) / 2
+                        PointerSelection.RIGHT -> -mPointerManager.pointerWidth / 2
                     }
                 )
                 mCurrentOffset = if (mMovement == Movement.DISCRETE)
@@ -133,38 +136,160 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
         return super.onTouchEvent(event)
     }
 
-    var index: Int
-        get() = mSelectedIndex
-        set(index) {
-            mSelectedIndex = index
-            mCurrentOffset = mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
-            invalidate()
-        }
+    override fun setNumberFrames(numberFrames: Int) {
+        mMarkerManager.createMarkers(numberFrames)
+        invalidate()
+        requestLayout()
+    }
 
-    var movement: Movement
-        get() = mMovement
-        set(value) {
-            mMovement = value
-        }
+    override fun getNumberFrames(): Int {
+        return mMarkerManager.numberOfMarkers
+    }
 
-    var pointerDirection: PointerSelection
-        get() = mPointerDirection
-        set(value) {
-            mPointerDirection = value
-        }
+    override fun setIndex(index: Int) {
+        mSelectedIndex = index
+        mCurrentOffset = mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
+        invalidate()
+    }
 
-    var corcedPointer: CoercePointer
-        get() = mCorcedPointer
-        set(value) {
-            mCorcedPointer = value
-        }
+    override fun getIndex(): Int {
+        return mSelectedIndex
+    }
 
-    var offset: Float
-        get() {
-           return -(mCurrentOffset - mStartOffset)
-        }
-        set(value) {
-            mCurrentOffset = -(value - mStartOffset)
-            invalidate()
-        }
+    override fun setMovement(movement: Movement) {
+        mMovement = movement
+        invalidate()
+    }
+
+    override fun getMovement(): Movement {
+        return mMovement
+    }
+
+    override fun setPointerSelection(pointerSelection: PointerSelection) {
+        mPointerDirection = pointerSelection
+        invalidate()
+        requestLayout()
+    }
+
+    override fun getPointerSelection(): PointerSelection {
+        return mPointerDirection
+    }
+
+    override fun setCoercePointer(coercePointer: CoercePointer) {
+        mCorcedPointer = coercePointer
+        invalidate()
+    }
+
+    override fun getCoercePointer(): CoercePointer {
+        return mCorcedPointer
+    }
+
+    override fun setOffset(offset: Float) {
+        mCurrentOffset = -(offset - mStartOffset)
+        mSelectedIndex = mMarkerManager.findIndexTroughOffset(offset)
+        invalidate()
+    }
+
+    override fun getOffset(): Float {
+        return -(mCurrentOffset - mStartOffset)
+    }
+
+    override fun setMarkersWidth(width: Int) {
+        mMarkerManager.setMarkersWidth(width)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setMarkersWidth(listWidth: List<Pair<Int, Int>>) {
+        mMarkerManager.setMarkersWidth(listWidth)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setMarkersHeight(height: Int) {
+        mMarkerManager.setMarkersHeight(height)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setMarkersHeight(listHeight: List<Pair<Int, Int>>) {
+        mMarkerManager.setMarkersHeight(listHeight)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setMarkersTopOffset(topOffset: Int) {
+        mMarkerManager.setMarkersTopOffset(topOffset)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setMarkersTopOffset(listTopOffset: List<Pair<Int, Int>>) {
+        mMarkerManager.setMarkersTopOffset(listTopOffset)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setMarkersColor(color: Int) {
+        mMarkerManager.setMarkersColor(color)
+        invalidate()
+    }
+
+    override fun setMarkersColor(listColor: List<Pair<Int, Int>>) {
+        mMarkerManager.setMarkersColor(listColor)
+        invalidate()
+    }
+
+    override fun setMarkersDrawable(drawable: Drawable?) {
+        mMarkerManager.setMarkersDrawable(drawable)
+        invalidate()
+    }
+
+    override fun setMarkersDrawable(listDrawable: List<Pair<Int, Drawable?>>) {
+        mMarkerManager.setMarkersDrawable(listDrawable)
+        invalidate()
+    }
+
+    override fun setMarkersBitmap(bitmap: Bitmap?) {
+        mMarkerManager.setMarkersBitmap(bitmap)
+        invalidate()
+    }
+
+    override fun setMarkersBitmap(listBitmap: List<Pair<Int, Bitmap?>>) {
+        mMarkerManager.setMarkersBitmap(listBitmap)
+        invalidate()
+    }
+
+    override fun setPointerWidth(width: Int) {
+        mPointerManager.setPointerWidth(width)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setPointerHeight(height: Int) {
+        mPointerManager.setPointerHeight(height)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setPointerTopOffset(topOffset: Int) {
+        mPointerManager.setPointerTopOffset(topOffset)
+        invalidate()
+        requestLayout()
+    }
+
+    override fun setPointerColor(color: Int) {
+        mPointerManager.setPointerColor(color)
+        invalidate()
+    }
+
+    override fun setPointerDrawable(drawable: Drawable?) {
+        mPointerManager.setPointerDrawable(drawable)
+        invalidate()
+    }
+
+    override fun setPointerBitmap(bitmap: Bitmap?) {
+        mPointerManager.setPointerBitmap(bitmap)
+        invalidate()
+    }
 }
