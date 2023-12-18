@@ -12,7 +12,6 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.annotation.Dimension
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import com.rafambn.frameprogressbar.api.FrameProgressBarAPI
 import com.rafambn.frameprogressbar.api.MarkersAPI
@@ -242,7 +241,11 @@ class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View
             myAttrs.getInt(R.styleable.FrameProgressBar_markersHeight, 20),
             myAttrs.getInt(R.styleable.FrameProgressBar_markersTopOffset, 0),
             myAttrs.getInt(R.styleable.FrameProgressBar_markersColor, Color.GRAY),
-            AppCompatResources.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, 0))
+            try {
+                ContextCompat.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1))
+            } catch (ex: Resources.NotFoundException) {
+                null
+            }
         )
         myAttrs.recycle()
         invalidate()

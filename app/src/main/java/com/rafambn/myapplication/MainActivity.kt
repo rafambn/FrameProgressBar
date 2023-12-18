@@ -13,5 +13,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         zoom = findViewById(R.id.aaaa)
+        zoom.setNumberFrames(100)
     }
 }
