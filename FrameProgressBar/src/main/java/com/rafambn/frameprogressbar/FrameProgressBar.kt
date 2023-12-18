@@ -16,6 +16,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import com.rafambn.frameprogressbar.api.FrameProgressBarAPI
 import com.rafambn.frameprogressbar.api.MarkersAPI
+import com.rafambn.frameprogressbar.api.OnFrameProgressBarChangeListener
 import com.rafambn.frameprogressbar.api.PointerAPI
 import com.rafambn.frameprogressbar.enums.CoercePointer
 import com.rafambn.frameprogressbar.enums.Movement
@@ -64,6 +65,8 @@ class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View
     private var mInitialTouchX = 0F
     private var mStartTouchOffset = 0F
     private var mMovableDistance = 0F
+
+    private var mOnFrameProgressBarChangeListener: OnFrameProgressBarChangeListener? = null
 
     init {
         val myAttrs = context.obtainStyledAttributes(attrs, R.styleable.FrameProgressBar)
@@ -178,6 +181,7 @@ class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View
                     mMarkerManager.markerWidth.toFloat()
                 else
                     mMarkerManager.markerWidth - mPointerManager.pointerWidth.toFloat()
+                mOnFrameProgressBarChangeListener?.onStartTrackingTouch(this)
                 return true
             }
 
@@ -195,6 +199,7 @@ class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View
                         PointerSelection.RIGHT -> -mPointerManager.pointerWidth / 2
                     }
                 )
+                mOnFrameProgressBarChangeListener?.onIndexChanged(this, mSelectedIndex, true)
                 mCurrentOffset = if (mMovement == Movement.DISCRETE)
                     mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
                 else
@@ -202,8 +207,24 @@ class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View
 
                 invalidate()
             }
+
+            MotionEvent.ACTION_UP -> {
+                mOnFrameProgressBarChangeListener?.onStopTrackingTouch(this)
+            }
         }
         return super.onTouchEvent(event)
+    }
+
+    /**
+     * Sets a listener to receive notifications of changes to the FrameProgressBar's index. Also
+     * provides notifications of when the user starts and stops a touch gesture within the FrameProgressBar.
+     *
+     * @param listener The FrameProgressBar notification listener
+     *
+     * @see OnFrameProgressBarChangeListener
+     */
+    fun setOnFrameProgressBarChangeListener(listener: OnFrameProgressBarChangeListener) {
+        mOnFrameProgressBarChangeListener = listener
     }
 
     /**
@@ -245,6 +266,7 @@ class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View
     override fun setIndex(index: Int) {
         mSelectedIndex = index
         mCurrentOffset = mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
+        mOnFrameProgressBarChangeListener?.onIndexChanged(this, mSelectedIndex, false)
         invalidate()
     }
 
