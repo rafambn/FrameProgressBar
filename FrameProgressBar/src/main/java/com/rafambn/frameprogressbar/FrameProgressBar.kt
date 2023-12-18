@@ -37,7 +37,7 @@ import com.rafambn.frameprogressbar.managers.PointerManager
  * * Coerce Pointer: This feature determines whether or not the pointer can be dragged beyond the start or end of the progress
  * bar. The two possible values are COERCED and NOT_COERCED.
  */
-class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View(context, attrs),
+class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, attrs),
     FrameProgressBarAPI, MarkersAPI, PointerAPI {
     private val mScreenScale = context.resources.displayMetrics.density
     private val mMarkerManager = MarkerManager(mScreenScale)
@@ -229,25 +229,19 @@ class FrameProgressBar(context: Context, private val attrs: AttributeSet) : View
     /**
      * Sets the number of frames to be displayed.
      *
-     * Warning: This method might reset all current markers.
+     * Warning: This method will reset all current markers.
      *
      * @param numberFrames The number of frames to be displayed.
      */
     override fun setNumberFrames(numberFrames: Int) {
-        val myAttrs = context.obtainStyledAttributes(attrs, R.styleable.FrameProgressBar)
         mMarkerManager.createMarkers(
-            myAttrs.getInt(R.styleable.FrameProgressBar_size, 10),
-            myAttrs.getInt(R.styleable.FrameProgressBar_markersWidth, 5),
-            myAttrs.getInt(R.styleable.FrameProgressBar_markersHeight, 20),
-            myAttrs.getInt(R.styleable.FrameProgressBar_markersTopOffset, 0),
-            myAttrs.getInt(R.styleable.FrameProgressBar_markersColor, Color.GRAY),
-            try {
-                ContextCompat.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1))
-            } catch (ex: Resources.NotFoundException) {
-                null
-            }
+            numberFrames,
+            5,
+            20,
+            0,
+            Color.GRAY,
+            null
         )
-        myAttrs.recycle()
         invalidate()
         requestLayout()
     }
