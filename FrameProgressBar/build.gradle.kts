@@ -12,7 +12,7 @@ android {
     val versionMajor = 1
 
     defaultConfig {
-        minSdk = 24
+        minSdk = 21
         version = versionType * 10 + versionMajor
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
