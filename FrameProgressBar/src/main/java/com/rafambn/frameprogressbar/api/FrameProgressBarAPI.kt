@@ -21,7 +21,7 @@ interface FrameProgressBarAPI {
     fun setCoercePointer(coercePointer: CoercePointer)
     fun getCoercePointer(): CoercePointer
 
-    fun setOffset(offset: Float)
+    fun setOffset(offset: Float, ignoreMovementType: Boolean = false)
     fun getOffset(): Float
 
     fun findIndexTroughOffset(offset: Float): Int

@@ -356,10 +356,15 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
      * Offset is bound between 0 and the total size of the Markers.
      *
      * @param offset The offset in pixels.
+     * @param ignoreMovementType Weather you and to the offset to change acording to the MovementType.
      */
-    override fun setOffset(offset: Float) {
-        mCurrentOffset = -(offset.coerceIn(0F, mMarkerManager.markerWidth.toFloat()) - mStartOffset)
+    override fun setOffset(offset: Float, ignoreMovementType: Boolean) {
         mSelectedIndex = mMarkerManager.findIndexTroughOffset(offset)
+        mCurrentOffset = if (mMovement == Movement.DISCRETE && !ignoreMovementType)
+            mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
+        else
+            mStartOffset - offset.coerceIn(0F, mMarkerManager.markerWidth.toFloat())
+        mOnFrameProgressBarChangeListener?.onIndexChanged(this, mSelectedIndex, false)
         invalidate()
     }
 
