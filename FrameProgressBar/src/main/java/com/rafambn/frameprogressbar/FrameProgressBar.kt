@@ -76,7 +76,10 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
             myAttrs.getInt(R.styleable.FrameProgressBar_markersTopOffset, 0),
             myAttrs.getInt(R.styleable.FrameProgressBar_markersColor, Color.GRAY),
             try {
-                ContextCompat.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1))
+                ContextCompat.getDrawable(
+                    context,
+                    myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1)
+                )
             } catch (ex: Resources.NotFoundException) {
                 null
             }
@@ -87,7 +90,10 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
             myAttrs.getInt(R.styleable.FrameProgressBar_pointerTopOffset, 0),
             myAttrs.getInt(R.styleable.FrameProgressBar_pointerColor, Color.YELLOW),
             try {
-                ContextCompat.getDrawable(context, myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1))
+                ContextCompat.getDrawable(
+                    context,
+                    myAttrs.getResourceId(R.styleable.FrameProgressBar_markersDrawable, -1)
+                )
             } catch (ex: Resources.NotFoundException) {
                 null
             }
@@ -100,14 +106,15 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
                 Movement.CONTINUOUS
             }
         }
-        mPointerSelection = when (myAttrs.getInt(R.styleable.FrameProgressBar_pointerSelection, 1)) {
-            0 -> PointerSelection.LEFT
-            1 -> PointerSelection.CENTER
-            2 -> PointerSelection.RIGHT
-            else -> {
-                PointerSelection.CENTER
+        mPointerSelection =
+            when (myAttrs.getInt(R.styleable.FrameProgressBar_pointerSelection, 1)) {
+                0 -> PointerSelection.LEFT
+                1 -> PointerSelection.CENTER
+                2 -> PointerSelection.RIGHT
+                else -> {
+                    PointerSelection.CENTER
+                }
             }
-        }
         mCoercedPointer = when (myAttrs.getInt(R.styleable.FrameProgressBar_coercePointer, 1)) {
             0 -> CoercePointer.COERCED
             1 -> CoercePointer.NOT_COERCED
@@ -258,10 +265,12 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     /**
      * Sets the selected index.
      *
+     * Index is bound between 0 and the number of Markers.
+     *
      * @param index The selected index.
      */
     override fun setIndex(index: Int) {
-        mSelectedIndex = index
+        mSelectedIndex = index.coerceIn(0, mMarkerManager.numberOfMarkers - 1)
         mCurrentOffset = mStartOffset - mMarkerManager.findOffsetTroughIndex(mSelectedIndex)
         mOnFrameProgressBarChangeListener?.onIndexChanged(this, mSelectedIndex, false)
         invalidate()
@@ -344,10 +353,12 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     /**
      * Sets the offset of the view.
      *
+     * Offset is bound between 0 and the total size of the Markers.
+     *
      * @param offset The offset in pixels.
      */
     override fun setOffset(offset: Float) {
-        mCurrentOffset = -(offset - mStartOffset)
+        mCurrentOffset = -(offset.coerceIn(0F, mMarkerManager.markerWidth.toFloat()) - mStartOffset)
         mSelectedIndex = mMarkerManager.findIndexTroughOffset(offset)
         invalidate()
     }
@@ -551,5 +562,14 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     override fun setPointerBitmap(bitmap: Bitmap?) {
         mPointerManager.setPointerBitmap(bitmap)
         invalidate()
+    }
+
+    /**
+     * Find the Index of the FrameProgressBar given the Offset.
+     *
+     * @param offset The offset to use. Offset is bound between 0 and the total size of the Markers.
+     */
+    override fun findIndexTroughOffset(offset: Float): Int {
+        return mMarkerManager.findIndexTroughOffset((offset.coerceIn(0F, mMarkerManager.markerWidth.toFloat())))
     }
 }

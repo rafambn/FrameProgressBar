@@ -23,4 +23,6 @@ interface FrameProgressBarAPI {
 
     fun setOffset(offset: Float)
     fun getOffset(): Float
+
+    fun findIndexTroughOffset(offset: Float): Int
 }
