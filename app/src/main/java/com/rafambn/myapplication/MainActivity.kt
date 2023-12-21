@@ -1,18 +1,46 @@
 package com.rafambn.myapplication
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import com.rafambn.frameprogressbar.FrameProgressBar
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import com.rafambn.myapplication.theme.MyApplicationTheme
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
 
-    private lateinit var zoom: FrameProgressBar
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContent {
+            MyApplicationTheme {
 
-        setContentView(R.layout.activity_main)
+                // A surface container using the 'background' color from the theme
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Greeting()
+                }
+            }
+        }
+    }
+}
 
-        zoom = findViewById(R.id.aaaa)
-        zoom.setOffset(50F)
+
+@Composable
+fun Greeting(modifier: Modifier = Modifier) {
+    Text("Greetings!!")
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    MyApplicationTheme {
+        Greeting()
     }
 }
