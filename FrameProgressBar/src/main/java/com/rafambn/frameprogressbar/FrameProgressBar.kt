@@ -51,7 +51,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
     private var mStartOffset = 0F
 
     @Dimension(unit = Dimension.PX)
-    private var mCoercedtOffset = 0
+    private var mCoercedOffset = 0
 
     @Dimension(unit = Dimension.PX)
     private var mViewCenter = 0F
@@ -174,7 +174,7 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
             MotionEvent.ACTION_DOWN -> {
                 mInitialTouchX = event.x
                 mStartTouchOffset = mCurrentOffset
-                mCoercedtOffset =
+                mCoercedOffset =
                     if (mCoercedPointer == CoercePointer.COERCED) //TODO improve coerce
                         when (mPointerSelection) {
                             PointerSelection.LEFT -> 0
@@ -194,8 +194,8 @@ class FrameProgressBar(context: Context, attrs: AttributeSet) : View(context, at
             MotionEvent.ACTION_MOVE -> {
                 var distanceMoved = mStartTouchOffset + event.x - mInitialTouchX
                 distanceMoved = distanceMoved.coerceIn(
-                    mStartOffset - mMovableDistance - mCoercedtOffset,
-                    mStartOffset - mCoercedtOffset
+                    mStartOffset - mMovableDistance - mCoercedOffset,
+                    mStartOffset - mCoercedOffset
                 )
 
                 mSelectedIndex = mMarkerManager.findIndexTroughOffset(
