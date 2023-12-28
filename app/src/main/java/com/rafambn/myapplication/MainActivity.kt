@@ -38,15 +38,19 @@ class MainActivity : ComponentActivity() {
                         MarkerCompose(topOffset = 20.dp)
                     )
                     Box() {
-                        val teste = remember { mutableStateOf(0F)}
+                        val teste = remember { mutableStateOf(0F) }
                         FrameProgressBarCompose(
                             markers = markers,
                             value = teste.value,
                             onValueChange = {
                                 teste.value = it
                             },
-                            onValueChangeStarted = { /*TODO*/ },
-                            onValueChangeFinished = { /*TODO*/ },
+                            onValueChangeStarted = {
+                                println("comecou")
+                            },
+                            onValueChangeFinished = {
+                                println("acabou")
+                            },
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
@@ -72,15 +76,19 @@ fun GreetingPreview() {
             MarkerCompose(topOffset = 20.dp)
         )
         Box() {
-            val teste = remember { mutableStateOf(0F)}
+            val teste = remember { mutableStateOf(0F) }
             FrameProgressBarCompose(
                 markers = markers,
                 value = teste.value,
                 onValueChange = {
                     teste.value = it
                 },
-                onValueChangeStarted = { /*TODO*/ },
-                onValueChangeFinished = { /*TODO*/ },
+                onValueChangeStarted = {
+                    println("comecou")
+                },
+                onValueChangeFinished = {
+                    println("acabou")
+                },
                 modifier = Modifier.align(Alignment.Center)
             )
         }

@@ -1,41 +1,27 @@
 package com.rafambn.frameprogressbar.composablePart
 
-import androidx.compose.foundation.MutatePriority
-import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.DragScope
-import androidx.compose.foundation.gestures.DraggableState
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSizeIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.rafambn.frameprogressbar.enums.CoercePointer
 import com.rafambn.frameprogressbar.enums.Movement
 import com.rafambn.frameprogressbar.enums.PointerSelection
-import kotlinx.coroutines.coroutineScope
 import kotlin.math.max
-import kotlin.math.min
 
 @Composable
 fun FrameProgressBarCompose(
@@ -56,15 +42,11 @@ fun FrameProgressBarCompose(
     onValueChangeFinished: (() -> Unit)?,
     enabled: Boolean = true,
 ) {
-    var localValue by remember { mutableFloatStateOf(value) }
+    val density = LocalDensity.current
     val onValueChangeState = rememberUpdatedState<(Float) -> Unit> {
         if (it != value) {
             onValueChange(it)
         }
-    }
-
-    LaunchedEffect(value) {
-        localValue = value
     }
 
     Layout(
@@ -85,14 +67,15 @@ fun FrameProgressBarCompose(
             .focusable(enabled)
             .background(Color.Magenta)
             .clipToBounds()
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    val newValue = localValue + dragAmount.x
-                    val coercedValue = newValue.coerceIn(0f, markers.sumOf { it.width.value.toInt() }.dp.toPx())
+            .draggable(
+                orientation = Orientation.Horizontal,
+                state = rememberDraggableState { delta ->
+                    val newValue = value - delta
+                    val coercedValue = newValue.coerceIn(0f, with(density) { markers.sumOf { it.width.value.toInt() }.dp.toPx() })
                     onValueChangeState.value.invoke(coercedValue)
-                }
-            }
+                },
+                onDragStarted = { onValueChangeStarted?.invoke() },
+                onDragStopped = { onValueChangeFinished?.invoke() })
     ) { measurables, constraints ->
 
         val pointerPlaceable = measurables.first {
@@ -118,7 +101,7 @@ fun FrameProgressBarCompose(
             progressBarHeight
         ) {
             markersPlaceable.placeRelative(
-                markersOffsetX - localValue.toInt(),
+                markersOffsetX - value.toInt(),
                 markersOffsetY
             )
             pointerPlaceable.placeRelative(
