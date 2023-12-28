@@ -117,13 +117,15 @@ fun FrameProgressBarCompose(
             progressBarHeight
         ) {
             markersPlaceable.placeRelative(
-                markersOffsetX - value.toInt() -
-                        if (coercedPointer == CoercePointer.COERCED) when (pointerSelection) {
+                markersOffsetX
+                        - value.coerceIn(0F, markers.sumOf { it.width.value.toInt() }.dp.toPx() -
+                            if (coercedPointer == CoercePointer.COERCED) pointer.width.toPx()
+                            else 0F).toInt()
+                        - if (coercedPointer == CoercePointer.COERCED) when (pointerSelection) {
                             PointerSelection.LEFT -> 0
                             PointerSelection.CENTER -> halfPointerWidth
                             PointerSelection.RIGHT -> pointer.width.toPx().toInt()
-                        }
-                        else 0,
+                        } else 0,
                 markersOffsetY
             )
             pointerPlaceable.placeRelative(

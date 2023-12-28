@@ -5,9 +5,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -20,6 +22,9 @@ import com.rafambn.frameprogressbar.composablePart.MarkerCompose
 import com.rafambn.frameprogressbar.enums.CoercePointer
 import com.rafambn.frameprogressbar.enums.PointerSelection
 import com.rafambn.myapplication.theme.MyApplicationTheme
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -40,6 +45,12 @@ class MainActivity : ComponentActivity() {
                     )
                     Box() {
                         val teste = remember { mutableStateOf(0F) }
+                        LaunchedEffect(0) {
+                            MainScope().launch {
+                                delay(4000L)
+                                teste.value = 300F
+                            }
+                        }
                         FrameProgressBarCompose(
                             markers = markers,
                             value = teste.value,
