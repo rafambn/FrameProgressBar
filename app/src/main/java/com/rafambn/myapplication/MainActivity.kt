@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rafambn.frameprogressbar.FrameProgressBar
 import com.rafambn.frameprogressbar.Marker
+import com.rafambn.frameprogressbar.enums.CoercePointer
 import com.rafambn.frameprogressbar.enums.PointerSelection
 import com.rafambn.myapplication.theme.MyApplicationTheme
 
@@ -47,9 +48,9 @@ class MainActivity : ComponentActivity() {
 //                        }
                         FrameProgressBar(
                             modifier = Modifier.align(Alignment.Center),
-                            pointerSelection = PointerSelection.LEFT,
+                            pointerSelection = PointerSelection.CENTER,
                             pointer = Marker(
-                                width = 5.dp,
+                                width = 8.dp,
                                 height = 40.dp,
                                 topOffset = 5.dp,
                                 color = Color.Yellow
@@ -60,8 +61,6 @@ class MainActivity : ComponentActivity() {
                                 teste.value = it
                                 println(it)
                             },
-                            onIndexChangeStarted = { println("começou")},
-                            onIndexChangeFinished = { println("acabou")},
                             enabled = true,
                         )
                     }

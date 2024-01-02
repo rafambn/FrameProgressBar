@@ -1,6 +1,5 @@
 package com.rafambn.frameprogressbar
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
@@ -11,12 +10,13 @@ import androidx.compose.foundation.layout.requiredSizeIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalDensity
@@ -33,12 +33,7 @@ fun FrameProgressBar(
     modifier: Modifier = Modifier,
     pointerSelection: PointerSelection = PointerSelection.CENTER,
     coercedPointer: CoercePointer = CoercePointer.NOT_COERCED,
-    pointer: Marker = Marker(
-        width = 8.dp,
-        height = 40.dp,
-        topOffset = 5.dp,
-        color = Color.Yellow
-    ),
+    pointer: Marker,
     markers: List<Marker>,
     value: Float,
     onValueChange: (Float) -> Unit,  //TODO add range
@@ -67,12 +62,7 @@ fun FrameProgressBar(
 fun FrameProgressBar(
     modifier: Modifier = Modifier,
     pointerSelection: PointerSelection = PointerSelection.CENTER,
-    pointer: Marker = Marker(
-        width = 8.dp,
-        height = 40.dp,
-        topOffset = 5.dp,
-        color = Color.Yellow
-    ),
+    pointer: Marker,
     markers: List<Marker>,
     index: Int,
     onIndexChange: (Int) -> Unit,
@@ -109,12 +99,7 @@ private fun FrameProgressBarBase(
     movement: Movement = Movement.CONTINUOUS,
     pointerSelection: PointerSelection = PointerSelection.CENTER,
     coercedPointer: CoercePointer = CoercePointer.NOT_COERCED,
-    pointer: Marker = Marker(
-        width = 8.dp,
-        height = 40.dp,
-        topOffset = 5.dp,
-        color = Color.Yellow
-    ),
+    pointer: Marker,
     markers: List<Marker>,
     value: Float,
     onValueChange: (Float) -> Unit,
@@ -124,15 +109,9 @@ private fun FrameProgressBarBase(
     interactionSource: MutableInteractionSource? = null
 ) {
     val density = LocalDensity.current
-
-    val mOffsets = mutableListOf<Float>()
-    mOffsets.clear()
-    var tempOffset = 0F
-    markers.forEach {
-        mOffsets.add(tempOffset)
-        tempOffset += with(density) { it.width.toPx() }
-    }
-    val pressedOffset = remember { mutableFloatStateOf(0F) }
+    val mOffsets = remember { mutableStateListOf<Float>() }
+    val markersWidthPx = with(density) { markers.sumOf { it.width.value.toInt() }.dp.toPx() }
+    val pointerWidthPx = with(density) { pointer.width.toPx() }
     val rawOffset = remember { mutableFloatStateOf(with(density) { findOffsetTroughIndex(value, markers).dp.toPx() }) }
     val onValueChangeState = rememberUpdatedState<(Float) -> Unit> {
         if (it != value) {
@@ -140,12 +119,21 @@ private fun FrameProgressBarBase(
         }
     }
 
+    LaunchedEffect(markers) {
+        mOffsets.clear()
+        var tempOffset = 0F
+        markers.forEach {
+            mOffsets.add(tempOffset)
+            tempOffset += with(density) { it.width.toPx() }
+        }
+    }
+
     val draggableState = remember {
         DraggableState { delta ->
             val preValue = rawOffset.floatValue - delta
             val coercedValue = preValue.coerceIn(0f, with(density) {
-                markers.sumOf { it.width.value.toInt() }.dp.toPx() -
-                        if (coercedPointer == CoercePointer.COERCED) pointer.width.toPx()
+                markersWidthPx -
+                        if (coercedPointer == CoercePointer.COERCED) pointerWidthPx
                         else 0F
             })
             val newValue = if (movement == Movement.CONTINUOUS)
@@ -173,7 +161,6 @@ private fun FrameProgressBarBase(
                     pointer.height + pointer.topOffset
                 )
             )
-            .border(1.dp, Color.Magenta)
             .clipToBounds()
             .let { modifier1 ->
                 if (enabled) modifier1.draggable(
@@ -181,11 +168,9 @@ private fun FrameProgressBarBase(
                     orientation = Orientation.Horizontal,
                     state = draggableState,
                     onDragStarted = {
-                        pressedOffset.floatValue = 0F
                         onValueChangeStarted?.invoke()
                     },
                     onDragStopped = {
-                        pressedOffset.floatValue = 0F
                         onValueChangeFinished?.invoke()
                     })
                 else modifier1
@@ -197,47 +182,45 @@ private fun FrameProgressBarBase(
             it.layoutId == ComponentType.POINTER
         }.measure(constraints)
 
-
         val markersPlaceable = measures.first {
             it.layoutId == ComponentType.TRACK
         }.measure(constraints)
 
+        //Some variable to improve undestanding
         val progressBarWidth = markersPlaceable.width
         val progressBarHeight = max(markersPlaceable.height, pointerPlaceable.height)
-        val halfPointerWidth = floor(pointer.width.toPx() / 2).toInt()
+        val halfPointerWidth = floor(pointerWidthPx / 2).toInt()
         val halfProgressBarWidth = progressBarWidth / 2
 
+        //Variable to define the placement of the pointer with its center align with the center of the layout
         val pointerOffsetX = halfProgressBarWidth - halfPointerWidth
         val pointerOffsetY = 0
 
-        val markersOffsetX = pointerOffsetX + when (pointerSelection) {
-            PointerSelection.LEFT -> 0
-            PointerSelection.CENTER -> halfPointerWidth
-            PointerSelection.RIGHT -> pointer.width.toPx().toInt()
-        }
+        //This variable determines the placement of the markers. It aligns the left edge of the markers with the left edge of the pointer. Depending on the selection type
+        // of the pointer and if the pointer is coerced, it then shifts the markers to the right.
+        val markersOffsetX = pointerOffsetX + if (coercedPointer == CoercePointer.NOT_COERCED)
+            pointerSelectionShift(pointerSelection, halfPointerWidth, pointerWidthPx.toInt())
+        else
+            0
         val markersOffsetY = 0
 
         layout(
             progressBarWidth,
             progressBarHeight
         ) {
+            //It ensures that the movement is limited to the maximum width of the markers. If the pointer is in a coerced state, the width of the pointer is subtracted
+            // from the total movement.
+            val coercedValue = if (movement == Movement.CONTINUOUS) {
+                value.coerceIn(0F, markersWidthPx -
+                            if (coercedPointer == CoercePointer.COERCED) pointerWidthPx
+                            else 0F
+                ).toInt()
+            } else {
+                findOffsetTroughIndex(value, markers).dp.toPx().toInt()
+            }
+
             markersPlaceable.placeRelative(
-                markersOffsetX
-                        -
-                        if (movement == Movement.CONTINUOUS) {
-                            value.coerceIn(
-                                0F, markers.sumOf { it.width.value.toInt() }.dp.toPx() -
-                                        if (coercedPointer == CoercePointer.COERCED) pointer.width.toPx()
-                                        else 0F
-                            ).toInt()
-                        } else {
-                            findOffsetTroughIndex(value, markers).dp.toPx().toInt()
-                        }
-                        - if (coercedPointer == CoercePointer.COERCED) when (pointerSelection) {
-                    PointerSelection.LEFT -> 0
-                    PointerSelection.CENTER -> halfPointerWidth
-                    PointerSelection.RIGHT -> pointer.width.toPx().toInt()
-                } else 0,
+                markersOffsetX - coercedValue,
                 markersOffsetY
             )
             pointerPlaceable.placeRelative(
@@ -262,4 +245,12 @@ fun findOffsetTroughIndex(selectedIndex: Float, markers: List<Marker>): Float {
         } else starOffset += marker.width.value
     }
     return starOffset
+}
+
+fun pointerSelectionShift(pointerSelection: PointerSelection, halfPointerWidth: Int, pointerWidth: Int): Int {
+    return when (pointerSelection) {
+        PointerSelection.LEFT -> 0
+        PointerSelection.CENTER -> halfPointerWidth
+        PointerSelection.RIGHT -> pointerWidth
+    }
 }
