@@ -1,17 +1,15 @@
 package com.rafambn.frameprogressbar
 
-import android.graphics.Bitmap
-import android.graphics.Color
-import androidx.annotation.Dimension
-import androidx.annotation.Dimension.Companion.DP
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 data class Marker(
-    @Dimension(unit = DP)
-    var width: Int = 5,
-    @Dimension(unit = DP)
-    var height: Int = 5,
-    @Dimension(unit = DP)
-    var topOffset: Int = 0,
-    var color: Int = Color.GRAY,
-    var bitmap: Bitmap? = null
+    var width: Dp = 5.dp,
+    var height: Dp = 5.dp,
+    var topOffset: Dp = 0.dp,
+    var color: Color = Color.Gray,
+    var bitmap: ImageBitmap? = null
 )
+

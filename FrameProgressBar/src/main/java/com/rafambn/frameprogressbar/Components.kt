@@ -1,4 +1,4 @@
-package com.rafambn.frameprogressbar.composablePart
+package com.rafambn.frameprogressbar
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.DpSize
 @Composable
 fun Pointer(
     modifier: Modifier = Modifier,
-    pointer: MarkerCompose = MarkerCompose(
+    pointer: Marker = Marker(
         width = 5.dp,
         height = 40.dp,
         topOffset = 0.dp,
@@ -50,7 +50,7 @@ fun Pointer(
 @Composable
 fun Markers(
     modifier: Modifier = Modifier,
-    markersList: List<MarkerCompose>
+    markersList: List<Marker>
 ) {
     val mOffsets = mutableListOf<Dp>()
     mOffsets.clear()
