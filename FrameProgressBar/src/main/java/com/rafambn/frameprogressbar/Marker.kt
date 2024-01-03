@@ -11,5 +11,27 @@ data class Marker(
     var topOffset: Dp = 0.dp,
     var color: Color = Color.Gray,
     var bitmap: ImageBitmap? = null
-)
+){
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Marker) return false
+
+        if (width != other.width) return false
+        if (height != other.height) return false
+        if (topOffset != other.topOffset) return false
+        if (color != other.color) return false
+        if (bitmap != other.bitmap) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = width.hashCode()
+        result = 31 * result + height.hashCode()
+        result = 31 * result + topOffset.hashCode()
+        result = 31 * result + color.hashCode()
+        result = 31 * result + (bitmap?.hashCode() ?: 0)
+        return result
+    }
+}
 

@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.requiredSizeIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
@@ -109,9 +107,26 @@ private fun FrameProgressBarBase(
     interactionSource: MutableInteractionSource? = null
 ) {
     val density = LocalDensity.current
-    val mOffsets = remember { mutableStateListOf<Float>() }
-    val markersWidthPx = with(density) { markers.sumOf { it.width.value.toInt() }.dp.toPx() }
-    val pointerWidthPx = with(density) { pointer.width.toPx() }
+    val mOffsets = remember(markers.toList()) {
+        mutableListOf<Float>().apply {
+            clear()
+            var tempOffset = 0F
+            markers.forEach {
+                add(tempOffset)
+                tempOffset += with(density) { it.width.toPx() }
+            }
+        }
+    }
+
+    val pointerWidthPx = remember(pointer.hashCode()) { with(density) { pointer.width.toPx() } }
+    val trackWidthPx = remember(markers.toList()) {
+        with(density) { markers.sumOf { it.width.value.toInt() }.dp.toPx() } -
+                if (coercedPointer == CoercePointer.COERCED)
+                    pointerWidthPx
+                else
+                    0F
+    }
+
     val rawOffset = remember { mutableFloatStateOf(with(density) { findOffsetTroughIndex(value, markers).dp.toPx() }) }
     val onValueChangeState = rememberUpdatedState<(Float) -> Unit> {
         if (it != value) {
@@ -119,23 +134,9 @@ private fun FrameProgressBarBase(
         }
     }
 
-    LaunchedEffect(markers) {
-        mOffsets.clear()
-        var tempOffset = 0F
-        markers.forEach {
-            mOffsets.add(tempOffset)
-            tempOffset += with(density) { it.width.toPx() }
-        }
-    }
-
-    val draggableState = remember {
+    val draggableState = remember(markers.toList()) {
         DraggableState { delta ->
-            val preValue = rawOffset.floatValue - delta
-            val coercedValue = preValue.coerceIn(0f, with(density) {
-                markersWidthPx -
-                        if (coercedPointer == CoercePointer.COERCED) pointerWidthPx
-                        else 0F
-            })
+            val coercedValue = (rawOffset.floatValue - delta).coerceIn(0f, trackWidthPx)
             val newValue = if (movement == Movement.CONTINUOUS)
                 coercedValue
             else
@@ -148,7 +149,7 @@ private fun FrameProgressBarBase(
 
     Layout(
         {
-            Box(modifier = Modifier.layoutId(ComponentType.POINTER)) { Pointer(pointer = pointer) }
+            Box(modifier = Modifier.layoutId(ComponentType.POINTER)) { Pointer(pointer = pointer) } //TODO solve issue where if some value change it does not recompose this
             Box(modifier = Modifier.layoutId(ComponentType.TRACK)) { Markers(markersList = markers) }
         },
         modifier = modifier
@@ -210,14 +211,10 @@ private fun FrameProgressBarBase(
         ) {
             //It ensures that the movement is limited to the maximum width of the markers. If the pointer is in a coerced state, the width of the pointer is subtracted
             // from the total movement.
-            val coercedValue = if (movement == Movement.CONTINUOUS) {
-                value.coerceIn(0F, markersWidthPx -
-                            if (coercedPointer == CoercePointer.COERCED) pointerWidthPx
-                            else 0F
-                ).toInt()
-            } else {
+            val coercedValue = if (movement == Movement.CONTINUOUS)
+                value.coerceIn(0F, trackWidthPx).toInt()
+            else
                 findOffsetTroughIndex(value, markers).dp.toPx().toInt()
-            }
 
             markersPlaceable.placeRelative(
                 markersOffsetX - coercedValue,
