@@ -38,7 +38,7 @@ fun FrameProgressBar(
     onValueChangeStarted: (() -> Unit)? = null,
     onValueChangeFinished: (() -> Unit)? = null,
     enabled: Boolean = true,
-    interactionSource: MutableInteractionSource? = null //TODO test this
+    interactionSource: MutableInteractionSource? = null
 ) {
     FrameProgressBarBase(
         modifier = modifier,
@@ -91,6 +91,7 @@ fun FrameProgressBar(
     )
 }
 
+//TODO Add KMP support
 @Composable
 private fun FrameProgressBarBase(
     modifier: Modifier = Modifier,
@@ -149,7 +150,7 @@ private fun FrameProgressBarBase(
 
     Layout(
         {
-            Box(modifier = Modifier.layoutId(ComponentType.POINTER)) { Pointer(pointer = pointer) } //TODO solve issue where if some value change it does not recompose this
+            Box(modifier = Modifier.layoutId(ComponentType.POINTER)) { Pointer(pointer = pointer) }
             Box(modifier = Modifier.layoutId(ComponentType.TRACK)) { Markers(markersList = markers) }
         },
         modifier = modifier
