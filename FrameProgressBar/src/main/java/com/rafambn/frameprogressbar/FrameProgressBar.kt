@@ -34,7 +34,8 @@ fun FrameProgressBar(
     pointer: Marker,
     markers: List<Marker>,
     value: Float,
-    onValueChange: (Float) -> Unit,  //TODO add range
+    valueRange: ClosedFloatingPointRange<Float>? = null,
+    onValueChange: (Float) -> Unit,
     onValueChangeStarted: (() -> Unit)? = null,
     onValueChangeFinished: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -51,6 +52,7 @@ fun FrameProgressBar(
         onValueChange = onValueChange,
         onValueChangeStarted = onValueChangeStarted,
         onValueChangeFinished = onValueChangeFinished,
+        valueRange = valueRange,
         enabled = enabled,
         interactionSource = interactionSource,
     )
@@ -104,6 +106,7 @@ private fun FrameProgressBarBase(
     onValueChange: (Float) -> Unit,
     onValueChangeStarted: (() -> Unit)? = null,
     onValueChangeFinished: (() -> Unit)? = null,
+    valueRange: ClosedFloatingPointRange<Float>? = null,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null
 ) {
@@ -128,10 +131,23 @@ private fun FrameProgressBarBase(
                     0F
     }
 
-    val rawOffset = remember { mutableFloatStateOf(with(density) { findOffsetTroughIndex(value, markers).dp.toPx() }) }
+    val rawOffset = remember {
+        mutableFloatStateOf(with(density) {
+            if (movement == Movement.CONTINUOUS)
+                if (valueRange == null)
+                    value.coerceIn(0F, trackWidthPx)
+                else
+                    convertRange(value.coerceIn(valueRange.start, valueRange.endInclusive), valueRange, 0F..trackWidthPx)
+            else
+                findOffsetTroughIndex(value, markers).dp.toPx()
+        })
+    }
     val onValueChangeState = rememberUpdatedState<(Float) -> Unit> {
         if (it != value) {
-            onValueChange(it)
+            if (valueRange == null)
+                onValueChange(it)
+            else
+                onValueChange(convertRange(it, 0F..trackWidthPx, valueRange))
         }
     }
 
@@ -212,9 +228,12 @@ private fun FrameProgressBarBase(
         ) {
             //It ensures that the movement is limited to the maximum width of the markers. If the pointer is in a coerced state, the width of the pointer is subtracted
             // from the total movement.
-            val coercedValue = if (movement == Movement.CONTINUOUS)
-                value.coerceIn(0F, trackWidthPx).toInt()
-            else
+            val coercedValue = if (movement == Movement.CONTINUOUS) {
+                if (valueRange == null)
+                    value.coerceIn(0F, trackWidthPx).toInt()
+                else
+                    convertRange(value.coerceIn(valueRange.start, valueRange.endInclusive), valueRange, 0F..trackWidthPx).toInt()
+            } else
                 findOffsetTroughIndex(value, markers).dp.toPx().toInt()
 
             markersPlaceable.placeRelative(
@@ -251,4 +270,12 @@ fun pointerSelectionShift(pointerSelection: PointerSelection, halfPointerWidth: 
         PointerSelection.CENTER -> halfPointerWidth
         PointerSelection.RIGHT -> pointerWidth
     }
+}
+
+fun convertRange(
+    value: Float,
+    originalRange: ClosedFloatingPointRange<Float>,
+    targetRange: ClosedFloatingPointRange<Float>
+): Float {
+    return (value - originalRange.start) / (originalRange.endInclusive - originalRange.start) * (targetRange.endInclusive - targetRange.start) + targetRange.start
 }

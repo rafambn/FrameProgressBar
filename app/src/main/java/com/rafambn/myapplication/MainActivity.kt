@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rafambn.frameprogressbar.FrameProgressBar
 import com.rafambn.frameprogressbar.Marker
+import com.rafambn.frameprogressbar.enums.CoercePointer
 import com.rafambn.frameprogressbar.enums.PointerSelection
 import com.rafambn.myapplication.theme.MyApplicationTheme
 import kotlinx.coroutines.MainScope
@@ -54,26 +55,28 @@ class MainActivity : ComponentActivity() {
                             )
                         )
                     }
-                    LaunchedEffect(0) {
-                        MainScope().launch {
-                            delay(4000L)
-                            Log.e("teste", pointer.hashCode().toString())
-                            markers[0].width = 20.dp
-                            Log.e("teste", pointer.hashCode().toString())
-                        }
-                    }
-                    val teste = remember { mutableIntStateOf(0) }
+//                    LaunchedEffect(0) {
+//                        MainScope().launch {
+//                            delay(4000L)
+//                            Log.e("teste", pointer.hashCode().toString())
+//                            markers[0].width = 20.dp
+//                            Log.e("teste", pointer.hashCode().toString())
+//                        }
+//                    }
+                    val teste = remember { mutableStateOf(5F) }
                     Box {
                         FrameProgressBar(
                             modifier = Modifier.align(Alignment.Center),
                             pointerSelection = PointerSelection.CENTER,
+                            coercedPointer = CoercePointer.COERCED,
                             pointer = pointer.value,
                             markers = markers,
-                            index = teste.intValue,
-                            onIndexChange = {
-                                teste.intValue = it
+                            value = teste.value,
+                            onValueChange  = {
+                                teste.value = it
                                 println(it)
                             },
+                            valueRange = 1F..10F,
                             enabled = true,
                         )
                     }
