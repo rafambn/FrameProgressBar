@@ -8,7 +8,7 @@ android {
     namespace = "com.rafambn.frameprogressbar"
     compileSdk = 34
 
-    val versionType = 1 /*1 for XML; 2 for Compose*/
+    val versionType = 2 /*1 for XML; 2 for Compose*/
     val versionMajor = 1
 
     defaultConfig {
