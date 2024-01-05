@@ -93,7 +93,6 @@ fun FrameProgressBar(
     )
 }
 
-//TODO Add KMP support
 @Composable
 private fun FrameProgressBarBase(
     modifier: Modifier = Modifier,

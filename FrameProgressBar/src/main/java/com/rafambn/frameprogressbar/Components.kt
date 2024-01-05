@@ -29,7 +29,7 @@ fun Pointer(
                     drawImage(
                         image = bitmap,
                         topLeft = Offset(
-                            pointer.width.toPx(),
+                            0F,
                             pointer.topOffset.toPx()
                         )
                     )
