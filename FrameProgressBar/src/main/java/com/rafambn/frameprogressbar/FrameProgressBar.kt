@@ -26,6 +26,24 @@ import com.rafambn.frameprogressbar.enums.PointerSelection
 import kotlin.math.floor
 import kotlin.math.max
 
+/**
+ * A custom progress bar that displays a customizable set of frames.
+ *
+ * This version has a CONTINUOUS movement over its frames.
+ *
+ * @param modifier Modifier to be applied to the layout.
+ * @param pointerSelection Determines which part of the pointer indicates the current selection.
+ * @param coercedPointer Determines whether or not the pointer can be dragged beyond the start or end of the progress bar.
+ * @param pointer The marker that indicates the current position.
+ * @param markers The list of markers that indicates the frames.
+ * @param value The current value of the progress bar.
+ * @param valueRange The range of the progress bar's value.
+ * @param onValueChange Callback when the value changes.
+ * @param onValueChangeStarted Callback when the value change starts.
+ * @param onValueChangeFinished Callback when the value change finishes.
+ * @param enabled Determines whether the progress bar is enabled or not.
+ * @param interactionSource Additional source of interactions for this progress bar.
+ */
 @Composable
 fun FrameProgressBar(
     modifier: Modifier = Modifier,
@@ -58,6 +76,22 @@ fun FrameProgressBar(
     )
 }
 
+/**
+ * A custom progress bar that displays a customizable set of frames.
+ *
+ * This version has a DISCRETE movement over its frames.
+ *
+ * @param modifier Modifier to be applied to the layout.
+ * @param pointerSelection Determines which part of the pointer indicates the current selection.
+ * @param pointer The marker that indicates the current position.
+ * @param markers The list of markers that indicates the frames.
+ * @param index The current index of the progress bar.
+ * @param onIndexChange Callback when the index changes.
+ * @param onIndexChangeStarted Callback when the index change starts.
+ * @param onIndexChangeFinished Callback when the index change finishes.
+ * @param enabled Determines whether the progress bar is enabled or not.
+ * @param interactionSource Additional source of interactions for this progress bar.
+ */
 @Composable
 fun FrameProgressBar(
     modifier: Modifier = Modifier,
@@ -247,12 +281,12 @@ private fun FrameProgressBarBase(
     }
 }
 
-fun findIndexTroughOffset(offset: Float, listOffset: List<Float>): Float {
+internal fun findIndexTroughOffset(offset: Float, listOffset: List<Float>): Float {
     val index = listOffset.indexOfLast { offset >= it }
     return if (index != -1) index.toFloat() else 0F
 }
 
-fun findOffsetTroughIndex(selectedIndex: Float, markers: List<Marker>): Float {
+internal fun findOffsetTroughIndex(selectedIndex: Float, markers: List<Marker>): Float {
     var starOffset = 0F
     markers.forEachIndexed { index, marker ->
         if (selectedIndex == index.toFloat()) {
@@ -263,7 +297,7 @@ fun findOffsetTroughIndex(selectedIndex: Float, markers: List<Marker>): Float {
     return starOffset
 }
 
-fun pointerSelectionShift(pointerSelection: PointerSelection, halfPointerWidth: Int, pointerWidth: Int): Int {
+internal fun pointerSelectionShift(pointerSelection: PointerSelection, halfPointerWidth: Int, pointerWidth: Int): Int {
     return when (pointerSelection) {
         PointerSelection.LEFT -> 0
         PointerSelection.CENTER -> halfPointerWidth
@@ -271,7 +305,7 @@ fun pointerSelectionShift(pointerSelection: PointerSelection, halfPointerWidth: 
     }
 }
 
-fun convertRange(
+internal fun convertRange(
     value: Float,
     originalRange: ClosedFloatingPointRange<Float>,
     targetRange: ClosedFloatingPointRange<Float>
